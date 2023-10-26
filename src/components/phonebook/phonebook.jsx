@@ -1,20 +1,12 @@
 import { Component } from 'react';
-import { ErrorMessage, Field, Formik } from 'formik';
-import * as Yup from 'yup';
 import { nanoid } from 'nanoid';
-import { Contact } from 'components/contact/contact';
-// import { Contacts } from 'components/contact/contact';
-import { Button, StyledForm } from './form.styled';
 import { Container } from './phonebook.styled';
-
-const ContactSchema = Yup.object().shape({
-  name: Yup.string('Invalid name').required('Enter name'),
-  number: Yup.number('Invalid phone').required('Enter phone'),
-});
+import { ContactForm } from 'components/contact-form/contact-form';
+import { ContactList } from 'components/contacts/contact-list';
+import { Filter } from 'components/filter/filter';
 
 export class Phonebook extends Component {
   state = {
-    // contacts: [{ id: nanoid(), name: 'Kate', number: '09828' }],
     contacts: [
       { id: 'id-1', name: 'Rosie Simpson', number: '459-12-56' },
       { id: 'id-2', name: 'Hermione Kline', number: '443-89-12' },
@@ -22,75 +14,64 @@ export class Phonebook extends Component {
       { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
     ],
     filter: '',
-    name: '',
-    number: '',
   };
 
   addContact = values => {
+    let check = this.state.contacts.find(
+      contact => contact.name === values.name
+    );
+
+    if (check) {
+      alert(`${values.name} is already in contacts`);
+      return;
+    }
+
     let newContact = {
       id: nanoid(),
       name: values.name,
       number: values.number,
     };
+
     this.setState(prevState => ({
       contacts: [...prevState.contacts, newContact],
     }));
   };
 
-  filterHandle = value => {
-    const state = this.state;
-    this.setState({ filter: value });
-    let filteredContacts = [];
+  deleteContact = id => {
+    this.setState(prevState => ({
+      contacts: prevState.contacts.filter(contact => contact.id !== id),
+    }));
+  };
 
-    filteredContacts = state.contacts.filter(contact => {
-      return contact.name.includes(value);
+  filterHandle = value => {
+    this.setState({
+      filter: value,
     });
-    return filteredContacts;
+  };
+
+  filterContacts = () => {
+    const { contacts, filter } = this.state;
+
+    let filteredList = contacts.filter(contact => {
+      return contact.name.toLowerCase().includes(filter.toLowerCase());
+    });
+    return filteredList;
   };
 
   render() {
-    const state = this.state;
+    const filteredContacts = this.filterContacts();
 
     return (
       <Container>
         <h2>Phonebook</h2>
-        <Formik
-          initialValues={{ name: '', number: '' }}
-          validationSchema={ContactSchema}
-          onSubmit={(values, actions) => {
-            this.addContact(values);
-            actions.resetForm();
-          }}
-        >
-          <StyledForm>
-            <label>
-              <p>Name</p>
-              <Field type="text" name="name" required />
-              <ErrorMessage name="name" component="div" />
-            </label>
-            <label>
-              <p>Number</p>
-              <Field type="tel" name="number" required />
-              <ErrorMessage name="number" component="div" />
-            </label>
-            <Button type="submit">Add contact</Button>
-          </StyledForm>
-        </Formik>
+        <ContactForm onAdd={this.addContact} />
 
         <h2>Contacts</h2>
-        <input
-          type="text"
-          name="filter"
-          onChange={evt => this.filterHandle(evt.target.value)}
+        <Filter onFiltered={this.filterHandle} />
+        <ContactList
+          contactList={filteredContacts}
+          onDelete={this.deleteContact}
         />
-        {/* <Contacts onChangeFilter={this.filteredContacts}/> */}
-        <ul>
-          {state.contacts.map(contact => (
-            <li key={contact.id}>
-              <Contact name={contact.name} phone={contact.number} />
-            </li>
-          ))}
-        </ul>
       </Container>
     );
   }
